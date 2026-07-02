@@ -12,6 +12,19 @@ export default function RedirectHandler({ slug }: RedirectHandlerProps) {
   const [status, setStatus] = useState<'loading' | 'redirecting' | 'error' | 'not_found'>('loading');
   const [link, setLink] = useState<LinkData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [countdown, setCountdown] = useState<number>(2);
+
+  useEffect(() => {
+    let intervalId: any;
+    if (status === 'redirecting') {
+      intervalId = setInterval(() => {
+        setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [status]);
 
   useEffect(() => {
     let active = true;
@@ -30,13 +43,13 @@ export default function RedirectHandler({ slug }: RedirectHandlerProps) {
         setStatus('redirecting');
 
         // Log the click in Firestore in the background.
-        // We run a racing timeout of 1.2s so the user is never stuck if their network is slow,
-        // but normally we await the write completion to guarantee the click is traced!
         const trackingPromise = recordClick(slug, document.referrer);
-        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1200));
+
+        // Guarantee a minimum of 2000ms delay to give Firestore background sockets ample time to flush before unloading the page.
+        const delayPromise = new Promise((resolve) => setTimeout(resolve, 2000));
 
         try {
-          await Promise.race([trackingPromise, timeoutPromise]);
+          await Promise.allSettled([trackingPromise, delayPromise]);
         } catch (clickErr) {
           console.error('Background click logging completed with notice:', clickErr);
         }
@@ -123,12 +136,14 @@ export default function RedirectHandler({ slug }: RedirectHandlerProps) {
             <span className="truncate">{link.originalUrl}</span>
           </div>
 
-          <div className="mt-6 flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-800/40 px-3.5 py-2 rounded-xl border border-slate-800/60">
+          <div className="mt-6 flex items-center gap-2 text-xs text-slate-300 font-medium bg-slate-800/40 px-3.5 py-2 rounded-xl border border-slate-800/60">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            Click Traced in Background <ArrowRight className="w-3 h-3 text-slate-500" /> Redirecting...
+            <span>Click Traced in Background <span className="font-bold text-indigo-400 font-mono">({countdown}s)</span></span>
+            <ArrowRight className="w-3 h-3 text-slate-500" />
+            <span>Redirecting...</span>
           </div>
         </motion.div>
       </div>

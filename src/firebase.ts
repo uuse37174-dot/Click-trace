@@ -54,7 +54,7 @@ export interface ClickLog {
 
 // Helper to create a new tracking link
 export async function createLink(data: Omit<LinkData, 'createdAt' | 'clickCount' | 'shortUrl'>) {
-  const shortUrl = `${window.location.origin}/t/${data.id}`;
+  const shortUrl = `${window.location.origin}/?t=${data.id}`;
   const linkDoc: LinkData = {
     ...data,
     shortUrl,
