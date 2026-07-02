@@ -1,0 +1,22 @@
+{
+  "short_name": "LinkClick",
+  "name": "LinkClick Tracker & Shortener",
+  "icons": [
+    {
+      "src": "/pwa_icon_192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/pwa_icon_512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "A high-end tracking shortlink creator and visitor analytics engine synced with Firestore."
+}

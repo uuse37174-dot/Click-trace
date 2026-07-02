@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "Link": {
+      "title": "Link",
+      "description": "A tracked redirect link",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique slug for the short link" },
+        "title": { "type": "string", "description": "A readable name or label for the link" },
+        "originalUrl": { "type": "string", "description": "The destination URL" },
+        "shortUrl": { "type": "string", "description": "The generated tracking URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The creation timestamp" },
+        "clickCount": { "type": "integer", "description": "Total number of recorded clicks" },
+        "description": { "type": "string", "description": "Optional notes or details about the link" }
+      },
+      "required": ["id", "title", "originalUrl", "createdAt", "clickCount"]
+    },
+    "Click": {
+      "title": "Click",
+      "description": "An event log of a click on a tracked link",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique click ID" },
+        "linkId": { "type": "string", "description": "The slug of the tracked link" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "The exact click timestamp" },
+        "userAgent": { "type": "string", "description": "User agent of the visitor" },
+        "browser": { "type": "string", "description": "Browser name" },
+        "os": { "type": "string", "description": "Operating system name" },
+        "device": { "type": "string", "description": "Device category (Desktop, Mobile, etc.)" },
+        "referrer": { "type": "string", "description": "Referrer URL" }
+      },
+      "required": ["linkId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "links/{linkId}": {
+      "schema": { "$ref": "#/entities/Link" },
+      "description": "Collection of tracked redirect links"
+    },
+    "clicks/{clickId}": {
+      "schema": { "$ref": "#/entities/Click" },
+      "description": "Collection of detailed click statistics"
+    }
+  }
+}

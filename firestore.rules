@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default deny global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Links collection
+    match /links/{linkId} {
+      // Anyone can fetch individual links or list all links
+      allow read: if true;
+      
+      // Anyone can create a tracked link as long as schema is valid
+      allow create: if isValidId(linkId) 
+        && request.resource.data.id == linkId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.originalUrl is string
+        && request.resource.data.originalUrl.size() <= 2048
+        && request.resource.data.clickCount == 0;
+        
+      // Anyone can increment clickCount, or edit title/description
+      allow update: if isValidId(linkId)
+        && (
+          // Action 1: Record a click (increment clickCount by 1)
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clickCount'])
+           && request.resource.data.clickCount == resource.data.clickCount + 1)
+          // Action 2: User updating details in dashboard
+          || (request.resource.data.diff(resource.data).affectedKeys().hasAny(['title', 'description'])
+              && request.resource.data.id == resource.data.id
+              && request.resource.data.originalUrl == resource.data.originalUrl
+              && request.resource.data.createdAt == resource.data.createdAt)
+        );
+        
+      allow delete: if false; // Deletions blocked for safety
+    }
+
+    // Clicks collection
+    match /clicks/{clickId} {
+      // Anyone can see click logs for analytics
+      allow read: if true;
+      
+      // Anyone can record a click log event
+      allow create: if request.resource.data.linkId is string
+        && request.resource.data.linkId.size() <= 128
+        && request.resource.data.device is string
+        && request.resource.data.browser is string
+        && request.resource.data.os is string;
+        
+      // Click logs are immutable historical records
+      allow update, delete: if false;
+    }
+  }
+}

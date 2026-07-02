@@ -1,0 +1,6 @@
+{
+  "name": "LinkClick Tracker",
+  "description": "A link shortener and click tracker that logs click analytics to Firebase Firestore.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
