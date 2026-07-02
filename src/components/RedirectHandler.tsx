@@ -37,7 +37,11 @@ export default function RedirectHandler({ slug }: RedirectHandlerProps) {
 
         // Direct, instant redirection to the target destination
         if (active) {
-          window.location.replace(linkData.originalUrl);
+          let targetUrl = linkData.originalUrl.trim();
+          if (!/^https?:\/\//i.test(targetUrl)) {
+            targetUrl = 'https://' + targetUrl;
+          }
+          window.location.replace(targetUrl);
         }
 
       } catch (err: any) {

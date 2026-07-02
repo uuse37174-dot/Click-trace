@@ -21,8 +21,14 @@ async function startServer() {
           console.error(`Failed to record click for ${slug} in background:`, err);
         });
 
+        // Ensure redirect destination is absolute
+        let targetUrl = linkData.originalUrl.trim();
+        if (!/^https?:\/\//i.test(targetUrl)) {
+          targetUrl = 'https://' + targetUrl;
+        }
+
         // Perform instant server-side redirect
-        return res.redirect(302, linkData.originalUrl);
+        return res.redirect(302, targetUrl);
       } else {
         // Redirect to homepage with a clean error so the React app can show a beautiful "not found" UI
         return res.redirect(`/?error=not_found&slug=${slug}`);
