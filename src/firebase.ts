@@ -150,14 +150,20 @@ export async function recordClick(slug: string, referrerUrl: string): Promise<vo
 export async function getClickLogs(slug: string, limitCount = 50): Promise<ClickLog[]> {
   const q = query(
     collection(db, 'clicks'),
-    where('linkId', '==', slug),
-    orderBy('timestamp', 'desc'),
-    limit(limitCount)
+    where('linkId', '==', slug)
   );
   const querySnapshot = await getDocs(q);
   const logs: ClickLog[] = [];
   querySnapshot.forEach((doc) => {
     logs.push({ id: doc.id, ...doc.data() } as ClickLog);
   });
-  return logs;
+  
+  // Sort in-memory by timestamp descending to bypass composite index requirements
+  logs.sort((a, b) => {
+    const timeA = a.timestamp?.seconds || 0;
+    const timeB = b.timestamp?.seconds || 0;
+    return timeB - timeA;
+  });
+
+  return logs.slice(0, limitCount);
 }

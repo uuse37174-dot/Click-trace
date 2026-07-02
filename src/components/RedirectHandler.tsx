@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getLink, recordClick } from '../firebase';
 import { LinkData } from '../types';
 import { motion } from 'motion/react';
-import { AlertCircle, Home } from 'lucide-react';
+import { AlertCircle, Home, ExternalLink, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 
 interface RedirectHandlerProps {
   slug: string;
@@ -10,6 +10,7 @@ interface RedirectHandlerProps {
 
 export default function RedirectHandler({ slug }: RedirectHandlerProps) {
   const [status, setStatus] = useState<'loading' | 'redirecting' | 'error' | 'not_found'>('loading');
+  const [link, setLink] = useState<LinkData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   useEffect(() => {
@@ -25,17 +26,22 @@ export default function RedirectHandler({ slug }: RedirectHandlerProps) {
           return;
         }
 
+        setLink(linkData);
         setStatus('redirecting');
 
-        // Log the click in Firestore first, then immediately redirect.
-        // We await the click recording so the network request completes before the browser unloads the page.
+        // Log the click in Firestore in the background.
+        // We run a racing timeout of 1.2s so the user is never stuck if their network is slow,
+        // but normally we await the write completion to guarantee the click is traced!
+        const trackingPromise = recordClick(slug, document.referrer);
+        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1200));
+
         try {
-          await recordClick(slug, document.referrer);
+          await Promise.race([trackingPromise, timeoutPromise]);
         } catch (clickErr) {
-          // If click logging fails for some reason, we still want the user to be redirected smoothly
-          console.error('Click logging failed:', clickErr);
+          console.error('Background click logging completed with notice:', clickErr);
         }
 
+        // Smoothly proceed to the original destination URL
         if (active) {
           window.location.replace(linkData.originalUrl);
         }
@@ -56,14 +62,75 @@ export default function RedirectHandler({ slug }: RedirectHandlerProps) {
     };
   }, [slug]);
 
-  // Completely silent/background UI for normal states to make it look 100% natural and instant
-  if (status === 'loading' || status === 'redirecting') {
+  if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          {/* A tiny, high-end neutral spinner that works in the background */}
-          <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin"></div>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white px-4">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08),transparent_50%)] pointer-events-none"></div>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative z-10"
+        >
+          <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full mb-6 animate-pulse">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+          <h2 className="text-xl font-bold tracking-tight text-white">Resolving short URL</h2>
+          <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+            Connecting to secure cloud database to trace and load link details for:
+          </p>
+          <div className="mt-4 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-indigo-400 font-bold">
+            /t/{slug}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (status === 'redirecting' && link) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white px-4">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08),transparent_50%)] pointer-events-none"></div>
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative z-10"
+        >
+          <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full mb-6">
+            <ShieldCheck className="w-8 h-8 animate-bounce" />
+          </div>
+          
+          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider mb-2">
+            Link Verified
+          </span>
+          
+          <h2 className="text-xl font-bold tracking-tight text-white truncate max-w-full px-2" title={link.title}>
+            {link.title}
+          </h2>
+          
+          {link.description && (
+            <p className="text-xs text-slate-400 mt-2 line-clamp-2 px-4 leading-relaxed">
+              {link.description}
+            </p>
+          )}
+
+          <div className="w-full border-t border-slate-800/80 my-5"></div>
+
+          <p className="text-xs text-slate-500 font-medium">Redirecting you to target page:</p>
+          
+          <div className="mt-2.5 px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-indigo-400 font-mono font-medium break-all flex items-center justify-center gap-2 max-w-full shadow-inner">
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{link.originalUrl}</span>
+          </div>
+
+          <div className="mt-6 flex items-center gap-2 text-xs text-slate-400 font-medium bg-slate-800/40 px-3.5 py-2 rounded-xl border border-slate-800/60">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Click Traced in Background <ArrowRight className="w-3 h-3 text-slate-500" /> Redirecting...
+          </div>
+        </motion.div>
       </div>
     );
   }
