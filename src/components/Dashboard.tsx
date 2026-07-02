@@ -212,7 +212,7 @@ export default function Dashboard() {
         description: description.trim()
       });
 
-      setFormSuccess(`Link shortener "/?t=${finalSlug}" created successfully!`);
+      setFormSuccess(`Link shortener "/t/${finalSlug}" created successfully!`);
       
       // Reset form
       setSlug('');
@@ -698,9 +698,9 @@ export default function Dashboard() {
 
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleCopy(`${window.location.origin}/?t=${link.id}`, link.id)}
+                            onClick={() => handleCopy(`${window.location.origin}/t/${link.id}`, link.id)}
                             className="p-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg transition shadow-sm cursor-pointer relative"
-                            title="Copy link to clipboard (Guaranteed 100% safe fallback)"
+                            title="Copy link to clipboard"
                           >
                             {copiedId === link.id ? (
                               <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -709,7 +709,7 @@ export default function Dashboard() {
                             )}
                           </button>
                           <a
-                            href={`${window.location.origin}/?t=${link.id}`}
+                            href={`${window.location.origin}/t/${link.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg transition shadow-sm"
@@ -757,7 +757,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                     {/* Copy short link */}
                     <button
-                      onClick={() => handleCopy(`${window.location.origin}/?t=${selectedLink.id}`, 'selected')}
+                      onClick={() => handleCopy(`${window.location.origin}/t/${selectedLink.id}`, 'selected')}
                       className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl shadow-sm transition cursor-pointer"
                     >
                       {copiedId === 'selected' ? (
@@ -773,7 +773,7 @@ export default function Dashboard() {
                       )}
                     </button>
                     <a
-                      href={`${window.location.origin}/?t=${selectedLink.id}`}
+                      href={`${window.location.origin}/t/${selectedLink.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl transition shadow-sm"

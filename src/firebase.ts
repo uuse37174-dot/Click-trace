@@ -54,7 +54,7 @@ export interface ClickLog {
 
 // Helper to create a new tracking link
 export async function createLink(data: Omit<LinkData, 'createdAt' | 'clickCount' | 'shortUrl'>) {
-  const shortUrl = `${window.location.origin}/?t=${data.id}`;
+  const shortUrl = `${window.location.origin}/t/${data.id}`;
   const linkDoc: LinkData = {
     ...data,
     shortUrl,
@@ -123,8 +123,8 @@ function parseUserAgent(ua: string) {
 }
 
 // Helper to record a click event
-export async function recordClick(slug: string, referrerUrl: string): Promise<void> {
-  const uaString = navigator.userAgent;
+export async function recordClick(slug: string, referrerUrl: string, customUserAgent?: string): Promise<void> {
+  const uaString = customUserAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Server Redirect');
   const { browser, os, device } = parseUserAgent(uaString);
   
   const clickData: ClickLog = {
